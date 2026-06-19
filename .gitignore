@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.env.*.local
+logs/
+.DS_Store
+.idea/
+*.tsbuildinfo
+config.bat

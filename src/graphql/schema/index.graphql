@@ -1,0 +1,318 @@
+scalar DateTime
+scalar JSON
+
+enum UserRole {
+  USER
+  TRAINER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum FitnessGoal {
+  WEIGHT_LOSS
+  MUSCLE_GAIN
+  STRENGTH
+  ENDURANCE
+  MAINTENANCE
+}
+
+enum WorkoutType {
+  STRENGTH
+  CARDIO
+  HIIT
+  FLEXIBILITY
+  MIXED
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+interface Node {
+  id: ID!
+}
+
+type User implements Node {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  role: UserRole!
+  age: Int
+  gender: Gender
+  height: Float
+  weight: Float
+  targetWeight: Float
+  activityLevel: ActivityLevel
+  goal: FitnessGoal
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  workouts: [Workout!]!
+  progressLogs: [ProgressLog!]!
+  notifications: [Notification!]!
+}
+
+type Exercise {
+  name: String!
+  sets: Int!
+  reps: Int!
+  weight: Float
+  duration: Int
+  restSeconds: Int
+}
+
+type Workout implements Node {
+  id: ID!
+  userId: ID!
+  workoutName: String!
+  workoutType: WorkoutType!
+  difficulty: Difficulty!
+  exercises: [Exercise!]!
+  duration: Int!
+  caloriesBurn: Float!
+  createdAt: DateTime!
+  user: User
+}
+
+type WorkoutSession implements Node {
+  id: ID!
+  userId: ID!
+  workoutId: ID!
+  completedExercises: [String!]!
+  caloriesBurned: Float!
+  duration: Int!
+  completedAt: DateTime!
+  workout: Workout
+}
+
+type Meal {
+  name: String!
+  time: String!
+  foods: [String!]!
+  calories: Float!
+  proteins: Float!
+  carbs: Float!
+  fats: Float!
+}
+
+type NutritionPlan implements Node {
+  id: ID!
+  userId: ID!
+  meals: [Meal!]!
+  calories: Float!
+  proteins: Float!
+  carbs: Float!
+  fats: Float!
+  createdAt: DateTime!
+}
+
+type ProgressLog implements Node {
+  id: ID!
+  userId: ID!
+  weight: Float
+  bodyFat: Float
+  waterIntake: Float
+  caloriesConsumed: Float
+  loggedAt: DateTime!
+}
+
+type Notification implements Node {
+  id: ID!
+  userId: ID!
+  title: String!
+  message: String!
+  isRead: Boolean!
+  createdAt: DateTime!
+}
+
+type WeeklyProgress {
+  week: String!
+  avgWeight: Float
+  totalWater: Float!
+  totalCalories: Float!
+  logCount: Int!
+}
+
+type MonthlyProgress {
+  month: String!
+  avgWeight: Float
+  avgBodyFat: Float
+  totalWater: Float!
+  totalCalories: Float!
+}
+
+type WorkoutConsistency {
+  weeklyWorkouts: Int!
+  monthlyWorkouts: Int!
+  consistencyScore: Int!
+}
+
+type Analytics {
+  weeklyProgress: [WeeklyProgress!]!
+  monthlyProgress: [MonthlyProgress!]!
+  caloriesBurned: Float!
+  weightChange: Float
+  workoutConsistency: WorkoutConsistency!
+}
+
+type AuthPayload {
+  user: User!
+  accessToken: String!
+  refreshToken: String!
+}
+
+type TokenPayload {
+  accessToken: String!
+  refreshToken: String!
+}
+
+union SearchResult = User | Workout | NutritionPlan
+
+input RegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  age: Int
+  gender: Gender
+  height: Float
+  weight: Float
+  targetWeight: Float
+  activityLevel: ActivityLevel
+  goal: FitnessGoal
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input UpdateProfileInput {
+  firstName: String
+  lastName: String
+  age: Int
+  gender: Gender
+  height: Float
+  weight: Float
+  targetWeight: Float
+  activityLevel: ActivityLevel
+  goal: FitnessGoal
+}
+
+input ExerciseInput {
+  name: String!
+  sets: Int!
+  reps: Int!
+  weight: Float
+  duration: Int
+  restSeconds: Int
+}
+
+input CreateWorkoutInput {
+  workoutName: String!
+  workoutType: WorkoutType!
+  difficulty: Difficulty!
+  exercises: [ExerciseInput!]!
+  duration: Int!
+  caloriesBurn: Float!
+}
+
+input UpdateWorkoutInput {
+  workoutName: String
+  workoutType: WorkoutType
+  difficulty: Difficulty
+  exercises: [ExerciseInput!]
+  duration: Int
+  caloriesBurn: Float
+}
+
+input GenerateWorkoutPlanInput {
+  experienceLevel: Difficulty!
+}
+
+input GenerateNutritionPlanInput {
+  dailyCalorieTarget: Int
+}
+
+input ProgressLogInput {
+  weight: Float
+  bodyFat: Float
+  waterIntake: Float
+  caloriesConsumed: Float
+}
+
+input MarkWorkoutCompletedInput {
+  workoutId: ID!
+  completedExercises: [String!]!
+  caloriesBurned: Float!
+  duration: Int!
+}
+
+type Query {
+  getUser(id: ID!): User @auth
+  getUsers: [User!]! @auth(role: ADMIN)
+  getWorkout(id: ID!): Workout @auth
+  getWorkouts(userId: ID!): [Workout!]! @auth
+  getNutritionPlan(userId: ID!): NutritionPlan @auth
+  getProgress(userId: ID!): [ProgressLog!]! @auth
+  analytics(userId: ID!): Analytics! @auth
+  me: User @auth
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  refreshToken(input: RefreshTokenInput!): TokenPayload!
+  logout(refreshToken: String!): Boolean! @auth
+  updateProfile(input: UpdateProfileInput!): User! @auth
+  createWorkout(input: CreateWorkoutInput!): Workout! @auth
+  updateWorkout(id: ID!, input: UpdateWorkoutInput!): Workout! @auth
+  deleteWorkout(id: ID!): Boolean! @auth
+  generateWorkoutPlan(input: GenerateWorkoutPlanInput!): Workout! @auth
+  generateNutritionPlan(input: GenerateNutritionPlanInput!): NutritionPlan! @auth
+  addProgressLog(input: ProgressLogInput!): ProgressLog! @auth
+  markWorkoutCompleted(input: MarkWorkoutCompletedInput!): WorkoutSession! @auth
+}
+
+type Subscription {
+  workoutCompleted(userId: ID!): WorkoutCompletedPayload!
+  progressUpdated(userId: ID!): ProgressUpdatedPayload!
+  notificationReceived(userId: ID!): NotificationReceivedPayload!
+}
+
+type WorkoutCompletedPayload {
+  session: WorkoutSession!
+  workout: Workout!
+  userId: ID!
+}
+
+type ProgressUpdatedPayload {
+  progressLog: ProgressLog!
+  userId: ID!
+}
+
+type NotificationReceivedPayload {
+  notification: Notification!
+  userId: ID!
+}
+
+directive @auth(role: UserRole) on FIELD_DEFINITION
